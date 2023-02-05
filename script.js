@@ -1,40 +1,40 @@
 const forecastDiv = $("#forecast");
 const forcastData = []; // array stores 5 days forcast
 let cityName = "";
-
-// let city = {
-//   name: "",
-//   date: "", //list.dt
-//   icon: "", //list.weather.icon
-//   temperature: "", //list.main.temp
-//   humidity: "", //list.main.humidity
-//   windSpeed: "" //list.wind.speed
-// };
+let geoCoord = {}; // stores the lat & lon
+let currentWeatherData = {};
 
 let errorMsg = "";
 
- function getIconURL(icon) {
-    return "http://openweathermap.org/img/w/" + icon + ".png";
-  }
+function getIconURL(icon) {
+  return "http://openweathermap.org/img/w/" + icon + ".png";
+}
 
-function setWeatherData(list) {
+function showWeather(cityName) {
 
-  let city = {};
+  console.log(currentWeatherData);
+  console.log(currentWeatherData.temp);
 
-  city.date = moment.unix(list.dt).format("DD-MMM-YYYY"); // convert unix timestamp to readable date format
-  city.icon = getIconURL(list.weather[0].icon);
-  city.temperature = list.main.temp;
-  city.humidity = list.main.humidity;
-  city.windSpeed = list.wind.speed;
+  // show current weather data
+  $("#city-name").text(cityName + " ("+currentWeatherData.date+") ");
+  let img = $('<img>');
+  img.attr('src', currentWeatherData.iconLink);
+  $("#city-name").append(img);
+  $("#temp").text("Temperture: "+currentWeatherData.temp);
+  $("#wind").text("Wind speed: "+currentWeatherData.windSpeed);
+  $("#humidity").text("Humidity: "+currentWeatherData.humidity);
+  console.log("hit here");
 
-  // console.log("city:");
-  // console.log(city);  
-
-  return city;
+  forcastData.forEach(cityObj => {
+    console.log("showWeather");
+    let cityInfo = `City: ${cityName} ${cityObj.date} ${cityObj.temp} ${cityObj.windSpeed} ${cityObj.humidity}<br/>`;
+    $("#today").append(cityInfo);
+  });
 
 }
 
-function getWeather() {
+
+function getGeoCoord(cityName) {
 
   // geographical coordinates API query URL
   const gcQueryURL = "http://api.openweathermap.org/geo/1.0/direct?q="+cityName+"&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
@@ -53,54 +53,90 @@ function getWeather() {
     }
 
     // store the geographical coordinates to the city object
-    let lat = response[0].lat;
-    let lon = response[0].lon;
+    geoCoord.lat = response[0].lat;
+    geoCoord.lon = response[0].lon;
 
-    // Open Weather Map API query URL
-    const owmQueryURL = "https://api.openweathermap.org/data/2.5/forecast?lat="+lat+"&lon="+lon+"&units=metric&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
+    getCurrentWeatherData();
 
-    $.ajax({
-      url: owmQueryURL,
-      method: "GET"
-    }).then(function(owmResponse) { 
-
-      console.log(owmResponse);
-
-      if (owmResponse.Error || owmResponse.list  === undefined) {
-        errorMsg = "Sorry, city not found. (error: 002)";
-        return;
-      }  
-
-      // add current weather
-      forcastData.push(setWeatherData(owmResponse.list[0]));
-
-      // Only get the forcast data at time "00:00:00"
-
-      for (let i=7; i<owmResponse.list.length; i+=8) {
-        console.log("i:"+i);
-
-        forcastData.push(setWeatherData(owmResponse.list[i])); // add city object to forcast array
-
-        console.log(forcastData);
-      }
-
-      if (errorMsg === "") {
-        console.log("before showWeather");
-        showWeather();
-      } else {
-        // show error message
-      }
-
-    });
   });
 }
 
-function showWeather() {
+function getWeatherData() {
+  // Open Weather Map API query URL
+  const owmQueryURL = "https://api.openweathermap.org/data/2.5/forecast?lat="+geoCoord.lat+"&lon="+geoCoord.lon+"&units=metric&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
 
-  forcastData.forEach(cityObj => {
-    console.log("showWeather");
-    let cityInfo = `City: ${cityName} ${cityObj.date} ${cityObj.temperature} ${cityObj.windSpeed} ${cityObj.humidity}<br/>`;
-    $("#today").append(cityInfo);
+  $.ajax({
+    url: owmQueryURL,
+    method: "GET"
+  }).then(function(response) { 
+
+    console.log(response);
+
+    if (response.Error || response.list  === undefined) {
+      errorMsg = "Sorry, city not found. (error: 002)";
+      return;
+    }  
+
+    // Only get the forcast data at time "00:00:00"
+    let city = {};
+
+    for (let i=7; i<response.list.length; i+=8) {
+      console.log("i:"+i);
+
+      city = {}; // init city object
+      let list = response.list[i];
+
+      console.log("City name:"+ response.city.name);
+
+      city.date = moment.unix(list.dt).format("DD-MMM-YYYY"); // convert unix timestamp to readable date format
+      city.iconLink = getIconURL(list.weather[0].icon);
+      city.temp = list.main.temp;
+      city.humidity = list.main.humidity;
+      city.windSpeed = list.wind.speed;
+
+      forcastData.push(city); // add city object to forcast array
+
+      console.log(forcastData);
+    }
+
+    if (errorMsg === "") {
+      console.log("before showWeather");
+      showWeather(response.city.name);
+    } else {
+      // show error message
+    }
+
+  });
+}
+
+function getCurrentWeatherData() {
+
+  // geographical coordinates API query URL
+  const gcQueryURL = "https://api.openweathermap.org/data/2.5/weather?lat="+geoCoord.lat+"&lon="+geoCoord.lon+"&units=metric&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
+
+  // get geographical coordinates of the city
+  $.ajax({
+    url: gcQueryURL,
+    method: "GET"
+  }).then(function(response) { 
+
+    // console.log(JSON.stringify(response));
+
+    if (response.Error) {
+      errorMsg = "Sorry, city not found (error: 003).";
+      return;
+    }
+
+    // store current weather to currentWeatherData object
+    currentWeatherData.date = moment.unix(response.dt).format("DD-MMM-YYYY"); // convert unix timestamp to readable date format
+    currentWeatherData.iconLink = getIconURL(response.weather[0].icon);
+    currentWeatherData.temp = response.main.temp;
+    currentWeatherData.humidity = response.main.humidity;
+    currentWeatherData.windSpeed = response.wind.speed;
+    console.log("date:"+currentWeatherData.date);
+
+    getWeatherData();
+
   });
 
 }
@@ -118,6 +154,6 @@ $("#search-button").on("click", function(event) {
       return;
     }
 
-    getWeather();
+    getGeoCoord(cityName);
 
 });
