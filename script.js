@@ -74,7 +74,7 @@ function getGeoCoord(cityName) {
       return;
     }
 
-    // store the geographical coordinates to the city object
+    // store the geographical coordinates to the city object 
     geoCoord.lat = response[0].lat;
     geoCoord.lon = response[0].lon;
 
@@ -200,9 +200,9 @@ historyDiv.on('click', '.city', function (event) { // .city is the class of the 
 
 function showStoredButtons() {
   let cities = localStorage.getItem("cityName"); 
-  if (cities !== "") {
+  if (cities !== null) {
     cityList = cities.split(",");
-    // console.log(cityList);
+    // console.log("cityList");
     cityList.forEach(cityName => {
       historyDiv.append(`<button class="btn-info mb-2 city" data-city="${cityName}"> ${cityName} </button> `);
     });
