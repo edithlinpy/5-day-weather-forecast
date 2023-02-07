@@ -1,3 +1,16 @@
 .jumbotron {
     border: 1px solid #17a2b8;
 }
+
+.card-body {
+    border: 1px solid #17a2b8;
+    background-color: #E0FFFF;
+}
+
+#today {
+    display: none;
+}
+
+#forecast {
+    display: none;
+}

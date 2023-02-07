@@ -1,20 +1,31 @@
-const forecastDiv = $("#forecast");
-const forcastData = []; // array stores 5 days forcast
+const todayEl = $("#today");
+const forecastEl = $("#forecast");
+let forcastData = []; // array stores 5 days forcast
 let cityName = "";
 let geoCoord = {}; // stores the lat & lon
 let currentWeatherData = {};
 
-let errorMsg = "";
+// show error message modal
+function showErrorMsg(errorCode, errorMsg) {
+  // hide the weather information sections
+  todayEl.css("display", "none");
+  forecastEl.css("display", "none");
 
+  $("#error-code").text("Error: "+errorCode);
+  $("#error-msg").text(errorMsg);
+  $(".modal").modal({show:true});
+  console.log(errorMsg);
+  // alert(errorMsg);
+
+}
+
+// return an icon URL for img tag
 function getIconURL(icon) {
   return "http://openweathermap.org/img/w/" + icon + ".png";
 }
 
-function showWeather(cityName) {
-
-  console.log(currentWeatherData);
-  console.log(currentWeatherData.temp);
-
+// show weather information in "today" and "forcast" sections 
+function showWeather() {
   // show current weather data
   $("#city-name").text(cityName + " ("+currentWeatherData.date+") ");
   let img = $('<img>');
@@ -23,13 +34,22 @@ function showWeather(cityName) {
   $("#temp").text("Temperture: "+currentWeatherData.temp);
   $("#wind").text("Wind speed: "+currentWeatherData.windSpeed);
   $("#humidity").text("Humidity: "+currentWeatherData.humidity);
-  console.log("hit here");
+  todayEl.css("display", "block");
 
-  forcastData.forEach(cityObj => {
-    console.log("showWeather");
-    let cityInfo = `City: ${cityName} ${cityObj.date} ${cityObj.temp} ${cityObj.windSpeed} ${cityObj.humidity}<br/>`;
-    $("#today").append(cityInfo);
+  // show 5-day forecast data
+  forcastData.forEach((cityObj, i) => {
+    $("#card-date"+i).text(cityObj.date);
+
+    img = $('<img>');
+    img.attr('src', cityObj.iconLink);
+    $("#card-icon"+i).empty();
+    $("#card-icon"+i).append(img);    
+    $("#card-temp"+i).text(cityObj.temp);
+    $("#card-wind"+i).text(cityObj.windSpeed);
+    $("#card-humidity"+i).text(cityObj.humidity);
   });
+
+  forecastEl.css("display", "block");
 
 }
 
@@ -46,9 +66,10 @@ function getGeoCoord(cityName) {
   }).then(function(response) { 
 
     // console.log(JSON.stringify(response));
+    // console.log("status: "+response.Status); 
 
-    if (response.Error || response[0].lat === undefined || response[0].lon === undefined) {
-      errorMsg = "Sorry, city not found (error: 001).";
+    if (response == "" || response[0].lat == undefined || response[0].lon == undefined) {
+      showErrorMsg("002", "Sorry, city not found.");
       return;
     }
 
@@ -58,9 +79,10 @@ function getGeoCoord(cityName) {
 
     getCurrentWeatherData();
 
-  });
+  })
 }
 
+// get 5-day forecast data from api.openweathermap.org
 function getWeatherData() {
   // Open Weather Map API query URL
   const owmQueryURL = "https://api.openweathermap.org/data/2.5/forecast?lat="+geoCoord.lat+"&lon="+geoCoord.lon+"&units=metric&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
@@ -70,10 +92,10 @@ function getWeatherData() {
     method: "GET"
   }).then(function(response) { 
 
-    console.log(response);
+    // console.log(response);
 
-    if (response.Error || response.list  === undefined) {
-      errorMsg = "Sorry, city not found. (error: 002)";
+    if (response == "" || response.list  === undefined) {
+      showErrorMsg("003", "Sorry, city not found.");
       return;
     }  
 
@@ -81,12 +103,11 @@ function getWeatherData() {
     let city = {};
 
     for (let i=7; i<response.list.length; i+=8) {
-      console.log("i:"+i);
 
       city = {}; // init city object
       let list = response.list[i];
 
-      console.log("City name:"+ response.city.name);
+      // console.log("City name:"+ response.city.name);
 
       city.date = moment.unix(list.dt).format("DD-MMM-YYYY"); // convert unix timestamp to readable date format
       city.iconLink = getIconURL(list.weather[0].icon);
@@ -96,15 +117,10 @@ function getWeatherData() {
 
       forcastData.push(city); // add city object to forcast array
 
-      console.log(forcastData);
+      // console.log(forcastData);
     }
 
-    if (errorMsg === "") {
-      console.log("before showWeather");
-      showWeather(response.city.name);
-    } else {
-      // show error message
-    }
+    showWeather();
 
   });
 }
@@ -122,8 +138,8 @@ function getCurrentWeatherData() {
 
     // console.log(JSON.stringify(response));
 
-    if (response.Error) {
-      errorMsg = "Sorry, city not found (error: 003).";
+    if (response == "") {
+      showErrorMsg("003","Sorry, city not found.");
       return;
     }
 
@@ -150,10 +166,11 @@ $("#search-button").on("click", function(event) {
     cityName = $("#search-input").val().trim();
 
     if (cityName === "") {
-      errorMsg = "Please enter a city name to search.";
+      showErrorMsg("001","Please enter a city name to search.");
       return;
     }
 
+    forcastData = []; // init forcastData array
     getGeoCoord(cityName);
 
 });
