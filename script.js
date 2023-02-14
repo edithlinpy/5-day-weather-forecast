@@ -59,7 +59,7 @@ function showWeather() {
 function getGeoCoord(cityName) {
 
   // geographical coordinates API query URL
-  const gcQueryURL = "http://api.openweathermap.org/geo/1.0/direct?q="+cityName+"&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
+  const gcQueryURL = "https://api.openweathermap.org/geo/1.0/direct?q="+cityName+"&appid=e7b6ba243587870fcc4406f2a4ca1ee9";
 
   // get geographical coordinates of the city
   $.ajax({
@@ -67,7 +67,7 @@ function getGeoCoord(cityName) {
     method: "GET"
   }).then(function(response) { 
 
-    // console.log(JSON.stringify(response));
+    console.log(JSON.stringify(response));
 
     if (response == "" || response[0].lat == undefined || response[0].lon == undefined) {
       showErrorMsg("002", "Sorry, city not found.");
