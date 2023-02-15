@@ -23,7 +23,7 @@ function showErrorMsg(errorCode, errorMsg) {
 
 // return an icon URL for img tag
 function getIconURL(icon) {
-  return "http://openweathermap.org/img/w/" + icon + ".png";
+  return "https://openweathermap.org/img/w/" + icon + ".png";
 }
 
 // show weather information in "today" and "forcast" sections 
